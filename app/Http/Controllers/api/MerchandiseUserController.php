@@ -91,6 +91,37 @@ class MerchandiseUserController extends Controller
         ], 200);
     }
 
+        /**
+     * 取得單個產品
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function getProductbyId($id)
+    {
+
+        // 撈取商品分頁資料
+        $ProductDetail = Product::where('id',$id)->where('status', 1)->orderBy('updated_at', 'desc')->first();
+        // 如果不存在
+        if(!$ProductDetail){
+            return response()->json([
+                'success' => false,
+                'message' => "商品不存在"
+            ], 500);
+        }
+        // 設定商品圖片網址
+        if (!is_null($ProductDetail->photo)) {
+            // 設定商品照片網址
+            $ProductDetail->pimg = url($ProductDetail->pimg);
+        }
+        
+
+        return response()->json([
+            'success' => true,
+            'product_list' => $ProductDetail,
+        ], 200);
+    }
+
     /**
      * 更新產品
      *
@@ -155,6 +186,8 @@ class MerchandiseUserController extends Controller
             $data["total_price"] = $data["total_price"] + ($value->count * $value->price);
         }
 
+        $data["user_email"] = $request->user()->email;
+        $data["user_name"] = $request->user()->name;
         return response()->json($data, 200);
     }
 
@@ -386,6 +419,37 @@ class MerchandiseUserController extends Controller
         foreach ($OrderPaginate as $value) {
             $value->cr_at = Carbon::parse($value->created_at)->diffForHumans();
             $value->products = DB::select('select * from order_item where uuid = ? and ooid = ?', [$value->uuid, $value->ooid]);
+        }
+        return response()->json([
+            'success' => true,
+            'data' => $OrderPaginate,
+        ], 200);
+    }
+
+    
+    /**
+     * 取得自己的訂單
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function ownOrder(Request $request)
+    {
+        $ownUUID =  $request->user()->uuid;
+        // 每頁資料量
+        $row_per_page = 10;
+
+        // 撈取商品分頁資料
+        $OrderPaginate = DB::table('order')->paginate($row_per_page);
+
+        foreach ($OrderPaginate as $elementKey => $value) {
+            if($ownUUID != $value->uuid){
+                unset($OrderPaginate[$elementKey]);
+            }else{
+                $value->cr_at = Carbon::parse($value->created_at)->diffForHumans();
+                $value->products = DB::select('select * from order_item where uuid = ? and ooid = ?', [$value->uuid, $value->ooid]);
+            }
+           
         }
         return response()->json([
             'success' => true,
