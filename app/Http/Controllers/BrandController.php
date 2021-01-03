@@ -16,10 +16,17 @@ class BrandController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         //
-        return 'App\Models\Brand'::all();
+        if ($request->has('type')) {
+            //
+            $type = $request->input('type');
+            return 'App\Models\Brand'::where("type", $type)->get();
+        }else{
+            return 'App\Models\Brand'::all();
+        }
+       
     }
 
     /**
