@@ -1,7 +1,11 @@
 <?php
 
+namespace App\Http\Controllers\api;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -21,9 +25,25 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::prefix('v1')->group(function () {
+    // 品牌
+    Route::prefix('brands')->group(function () {
+        // 看全部品牌
+        Route::get('/', 'App\Http\Controllers\BrandController@index');
+        // 新增品牌
+        Route::post('/', 'App\Http\Controllers\BrandController@store');
+        // 更新品牌
+        Route::put('/{id}', 'App\Http\Controllers\BrandController@update');
+        // 刪除品牌
+        Route::delete('/{id}', 'App\Http\Controllers\BrandController@destroy');
+        // 顯示品牌底下所有的商品
+        Route::get('product/{brandname}', 'App\Http\Controllers\BrandController@findProduct');
+    });
+
+    
 
     // 商品瀏覽
     Route::get('getproduct', 'App\Http\Controllers\api\MerchandiseUserController@getProduct');
+    Route::get('product/{id}', 'App\Http\Controllers\api\MerchandiseUserController@getProductbyId');
 
     // 測試綠界
     Route::post('/callback', 'App\Http\Controllers\api\MerchandiseUserController@callback');
@@ -57,7 +77,8 @@ Route::prefix('v1')->group(function () {
 
             // 訂單處理
             Route::prefix('order')->group(function () {
-
+                // 自己的訂單
+                Route::get('/', 'App\Http\Controllers\api\MerchandiseUserController@ownOrder');
                 // 新增訂單
                 Route::post('/', 'App\Http\Controllers\api\MerchandiseUserController@createOrder');
                 
@@ -113,3 +134,7 @@ Route::prefix('v1')->group(function () {
         });
     });
 });
+
+
+
+
