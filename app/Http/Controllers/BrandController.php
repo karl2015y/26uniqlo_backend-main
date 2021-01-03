@@ -199,6 +199,8 @@ class BrandController extends Controller
     public function findProduct($brandname)
     {
         //
+        $row_per_page = 10;
+
         $brand_num = 'App\Models\Brand'::where("name", $brandname)->count(); //符合的品牌數量
         if($brand_num<1){
             return response()->json([
@@ -209,8 +211,8 @@ class BrandController extends Controller
             $products =  'App\Models\Product'::where('category',$brandname);
             return response()->json([
                                     'success' => true,
-                                    'lenght' => $products->count(),
-                                    'data' =>   $products->get(),
+                                    'data' =>   $products->orderBy('updated_at', 'desc')
+                                    ->paginate($row_per_page)
                                     ], 200);
             
         }
