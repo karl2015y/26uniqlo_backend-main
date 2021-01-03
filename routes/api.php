@@ -33,6 +33,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/', 'App\Http\Controllers\BrandController@store');
         // 更新品牌
         Route::put('/{id}', 'App\Http\Controllers\BrandController@update');
+        // 上傳品牌圖片
+        Route::post('/pic/{id}', 'App\Http\Controllers\BrandController@update');
         // 刪除品牌
         Route::delete('/{id}', 'App\Http\Controllers\BrandController@destroy');
         // 顯示品牌底下所有的商品
