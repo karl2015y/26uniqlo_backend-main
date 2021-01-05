@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -119,6 +119,18 @@ Route::prefix('v1')->group(function () {
                 Route::put('/', 'App\Http\Controllers\api\MerchandiseController@updateCart');
                 // 取得購物車
                 Route::get('/', 'App\Http\Controllers\api\MerchandiseController@getCart');
+            });
+
+            Route::prefix('daigouparameter')->group(function () {
+                // 新增參數
+                Route::post('/',  [DaigouparameterController::class, 'store']);
+                // 取得參數
+                Route::get('/',  [DaigouparameterController::class, 'index']);
+                // 更新參數
+                Route::put('/{id}',  [DaigouparameterController::class, 'update']);
+                // 刪除參數
+                Route::delete('/{id}',  [DaigouparameterController::class, 'destroy']);
+                
             });
 
             // 模擬類
