@@ -2,10 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
-
 
 /*
 |--------------------------------------------------------------------------
@@ -16,13 +13,11 @@ use Illuminate\Support\Facades\Route;
 | routes are loaded by the RouteServiceProvider within a group which
 | is assigned the "api" middleware group. Enjoy building your API!
 |
-*/
+ */
 
 // Route::middleware('auth:api')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
-
-
 
 Route::prefix('v1')->group(function () {
     // 品牌
@@ -41,8 +36,6 @@ Route::prefix('v1')->group(function () {
         Route::get('product/{brandname}', 'App\Http\Controllers\BrandController@findProduct');
     });
 
-    
-
     // 商品瀏覽
     Route::get('getproduct', 'App\Http\Controllers\api\MerchandiseUserController@getProduct');
     Route::get('product/{id}', 'App\Http\Controllers\api\MerchandiseUserController@getProductbyId');
@@ -60,6 +53,25 @@ Route::prefix('v1')->group(function () {
         Route::middleware('auth:sanctum')->get('/getuser', 'App\Http\Controllers\api\UserController@getUser');
 
         Route::group(['middleware' => ['auth:sanctum']], function () {
+            // 代購單
+            Route::prefix('daigouorder')->group(function () {
+                // 新增代購單
+                Route::post('/', [DaigouorderController::class, 'store']);
+                // 取得代購單
+                Route::get('/', [DaigouorderController::class, 'index']);
+                // // 刪除代購單
+                Route::delete('/{dgid}',  [DaigouorderController::class, 'destroy']);
+                // 取得代購單下所有品項
+                Route::get('/{dgid}', [DaigouitemController::class, 'index']);
+                // 新增代品項
+                Route::post('/{dgid}', [DaigouitemController::class, 'store']);
+                // 修改品項數量
+                Route::put('/item/{itemid}',  [DaigouitemController::class, 'update']);
+                // // 刪除品項
+                Route::delete('/item/{itemid}',  [DaigouitemController::class, 'destroy']);
+
+                
+            });
 
             Route::prefix('products')->group(function () {
                 // 指定商品
@@ -83,8 +95,8 @@ Route::prefix('v1')->group(function () {
                 Route::get('/', 'App\Http\Controllers\api\MerchandiseUserController@ownOrder');
                 // 新增訂單
                 Route::post('/', 'App\Http\Controllers\api\MerchandiseUserController@createOrder');
-                
-            });          
+
+            });
 
         });
     });
@@ -96,7 +108,7 @@ Route::prefix('v1')->group(function () {
         // Route::post('/uploadimg', 'App\Http\Controllers\api\AdminsController@uploadImg');
         // 取得資訊
         Route::group(['middleware' => ['auth:sanctum', 'auth.admin']], function () {
-            
+
             Route::prefix('products')->group(function () {
                 // 新增產品
                 Route::post('/', 'App\Http\Controllers\api\MerchandiseController@createProduct');
@@ -123,14 +135,14 @@ Route::prefix('v1')->group(function () {
 
             Route::prefix('daigouparameter')->group(function () {
                 // 新增參數
-                Route::post('/',  [DaigouparameterController::class, 'store']);
+                Route::post('/', [DaigouparameterController::class, 'store']);
                 // 取得參數
-                Route::get('/',  [DaigouparameterController::class, 'index']);
+                Route::get('/', [DaigouparameterController::class, 'index']);
                 // 更新參數
-                Route::put('/{id}',  [DaigouparameterController::class, 'update']);
+                Route::put('/{id}', [DaigouparameterController::class, 'update']);
                 // 刪除參數
-                Route::delete('/{id}',  [DaigouparameterController::class, 'destroy']);
-                
+                Route::delete('/{id}', [DaigouparameterController::class, 'destroy']);
+
             });
 
             // 模擬類
@@ -143,12 +155,6 @@ Route::prefix('v1')->group(function () {
                 Route::post('/pay', 'App\Http\Controllers\api\MerchandiseController@Simulationpay');
             });
 
-            
-
         });
     });
 });
-
-
-
-
