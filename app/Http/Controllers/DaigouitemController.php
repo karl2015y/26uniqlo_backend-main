@@ -6,6 +6,9 @@ use App\Models\Daigouitem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
+use Carbon\Carbon;
+
+
 class DaigouitemController extends Controller
 {
 
@@ -21,6 +24,8 @@ class DaigouitemController extends Controller
         $total = 0;
         foreach ($list as $item) {
             $total += $item->total;
+            $item->cr_at = Carbon::parse($item->created_at)->diffForHumans();
+            $item->up_at = Carbon::parse($item->updated_at)->diffForHumans();
         };
 
         $data = [
@@ -44,7 +49,7 @@ class DaigouitemController extends Controller
             'dgurl' => ['required', 'active_url'],
             'dgimgurl' => ['active_url'],
             'picfile' => ['image'],
-            'dgtype' => ['required'],
+            'dgtypeId' => ['required'],
             'count' => ['required'],
             'price' => ['required'],
             'note' => [],
@@ -55,7 +60,7 @@ class DaigouitemController extends Controller
             "dgurl.required" => "代購連結為必填",
             "dgimgurl.active_url" => "代購圖片連結錯誤",
             "picfile.image" => "代購圖片上傳格式錯誤",
-            "dgtype.required" => "代購商品類別為必填",
+            "dgtypeId.required" => "代購商品類別為必填",
             "count.required" => "代購商品數量為必填",
             "price.required" => "代購商品價格為必填",
         ];
@@ -66,12 +71,14 @@ class DaigouitemController extends Controller
             // 資料驗證錯誤
             return ['success' => false, 'error_Message' => $validator->errors()->all()];
         } else {
-            $KRW = 40;
-            $typeprice = 30;
             $newdata = $request->all();
+            $newdata['dgtype'] = 'App\Models\Daigouparameter'::where("id",$newdata['dgtypeId'])->first();
+            unset($newdata["dgtypeId"]);
+            $KRW = 'App\Models\Daigouparameter'::where("name","韓幣")->first()->price;
+            $typeprice = $newdata['dgtype']->price;
             $newdata['dgid'] = $dgid;
             $newdata['total'] = ceil(
-                ($newdata['price'] * $newdata['count'] / $KRW)
+                ($newdata['price'] / $KRW)
                  + $typeprice * $newdata['count']
             );
             return response()->json([
@@ -95,13 +102,23 @@ class DaigouitemController extends Controller
     {
         // 規則
         $rules = [
-            'count' => ['required'],
+            'dgurl' => ['active_url'],
+            'dgimgurl' => ['active_url'],
+            'picfile' => ['image'],
+            'dgtypeId' => [],
+            'count' => [],
+            'price' => [],
+            'note' => [],
         ];
         // 錯的回饋
         $messages = [
-            "count.required" => "數量為必填",
-
-
+            "dgurl.active_url" => "代購連結錯誤",
+            "dgurl.required" => "代購連結為必填",
+            "dgimgurl.active_url" => "代購圖片連結錯誤",
+            "picfile.image" => "代購圖片上傳格式錯誤",
+            "dgtypeId.required" => "代購商品類別為必填",
+            "count.required" => "代購商品數量為必填",
+            "price.required" => "代購商品價格為必填",
         ];
         //驗證是否正確
         $validator = Validator::make($request->all(), $rules, $messages);
@@ -110,33 +127,20 @@ class DaigouitemController extends Controller
             // 資料驗證錯誤
             return ['success' => false, 'error_Message' => $validator->errors()->all()];
         } else {
-
-            $oldData = Daigouitem::where('id', $itemid)->first();
-            $count = $request->all()['count'];
-
-            if ($oldData) {
-                // 儲存
-                $KRW = 40;
-                $typeprice = 30;
-                $temp = Daigouitem::where('id', $itemid)->first();
-                $temp->count =  $count;
-                $temp->total = ceil(
-                    ($oldData['price'] *  $count / $KRW)
-                     + $typeprice *  $count
-                );
-                $temp->save();
-
-                // 回傳
-                return response()->json([
-                    'success' => true,
-                    'data' => Daigouitem::where('id', $itemid)->first(),
-                ], 200);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'data' => "無資料",
-                ], 200);
-            }
+            $newdata = $request->all();
+            $newdata['dgtype'] = 'App\Models\Daigouparameter'::where("id",$newdata['dgtypeId'])->first();
+            unset($newdata["dgtypeId"]);
+            $KRW = 'App\Models\Daigouparameter'::where("name","韓幣")->first()->price;
+            $typeprice = $newdata['dgtype']->price;
+            $newdata['total'] =ceil(
+                ($newdata['price'] / $KRW)
+                 + $typeprice * $newdata['count']
+            );
+            Daigouitem::where('id', $itemid)->update($newdata);
+            return response()->json([
+                'success' => true,
+                'data' => Daigouitem::where('id', $itemid)->first(),
+            ], 200);
         }
     }
 

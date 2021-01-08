@@ -6,6 +6,9 @@ use App\Models\Daigouorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
+use Carbon\Carbon;
+
+
 class DaigouorderController extends Controller
 {
     /**
@@ -16,7 +19,11 @@ class DaigouorderController extends Controller
     public function index(Request $request)
     {
         //回傳該用戶的所有代購單
-        return Daigouorder::where("uuid", $request->user()->uuid)->get();
+        $Daigouorders = Daigouorder::where("uuid", $request->user()->uuid)->get();
+        foreach ($Daigouorders as $value) {
+            $value->cr_at = Carbon::parse($value->created_at)->diffForHumans();
+        }
+        return $Daigouorders;
 
     }
 

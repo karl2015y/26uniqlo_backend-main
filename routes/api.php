@@ -55,6 +55,8 @@ Route::prefix('v1')->group(function () {
         Route::group(['middleware' => ['auth:sanctum']], function () {
             // 代購單
             Route::prefix('daigouorder')->group(function () {
+                // 取得參數
+                Route::get('/params', [DaigouparameterController::class, 'index']);
                 // 新增代購單
                 Route::post('/', [DaigouorderController::class, 'store']);
                 // 取得代購單
@@ -69,6 +71,7 @@ Route::prefix('v1')->group(function () {
                 Route::put('/item/{itemid}',  [DaigouitemController::class, 'update']);
                 // // 刪除品項
                 Route::delete('/item/{itemid}',  [DaigouitemController::class, 'destroy']);
+                
 
                 
             });
