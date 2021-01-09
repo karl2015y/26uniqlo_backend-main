@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Daigouitem;
+use App\Models\Daigouorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -22,6 +23,7 @@ class DaigouitemController extends Controller
         //回傳該代購單下的品項
         $list = Daigouitem::where("dgid", $dgid)->get();
         $total = 0;
+        $Daigouorder = Daigouorder::where("dgid", $dgid)->first();
         foreach ($list as $item) {
             $total += $item->total;
             $item->cr_at = Carbon::parse($item->created_at)->diffForHumans();
@@ -31,6 +33,7 @@ class DaigouitemController extends Controller
         $data = [
             'total'=>$total,
             'list'=>$list,
+            'daigouorder'=>$Daigouorder
         ];
         return $data;
 

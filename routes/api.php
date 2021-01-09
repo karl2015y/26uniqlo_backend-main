@@ -57,23 +57,23 @@ Route::prefix('v1')->group(function () {
             Route::prefix('daigouorder')->group(function () {
                 // 取得參數
                 Route::get('/params', [DaigouparameterController::class, 'index']);
+                // 新增代購單至購物車
+                Route::post('/dg2cart', ['App\Http\Controllers\api\MerchandiseUserController'::class, 'createDaigouCart']);
                 // 新增代購單
                 Route::post('/', [DaigouorderController::class, 'store']);
                 // 取得代購單
                 Route::get('/', [DaigouorderController::class, 'index']);
                 // // 刪除代購單
-                Route::delete('/{dgid}',  [DaigouorderController::class, 'destroy']);
+                Route::delete('/{dgid}', [DaigouorderController::class, 'destroy']);
                 // 取得代購單下所有品項
                 Route::get('/{dgid}', [DaigouitemController::class, 'index']);
                 // 新增代品項
                 Route::post('/{dgid}', [DaigouitemController::class, 'store']);
                 // 修改品項數量
-                Route::put('/item/{itemid}',  [DaigouitemController::class, 'update']);
+                Route::put('/item/{itemid}', [DaigouitemController::class, 'update']);
                 // // 刪除品項
-                Route::delete('/item/{itemid}',  [DaigouitemController::class, 'destroy']);
-                
+                Route::delete('/item/{itemid}', [DaigouitemController::class, 'destroy']);
 
-                
             });
 
             Route::prefix('products')->group(function () {
@@ -151,6 +151,10 @@ Route::prefix('v1')->group(function () {
             // 模擬類
             Route::prefix('order')->group(function () {
 
+                
+                Route::post('/updatetotal/{ooid}', 'App\Http\Controllers\api\MerchandiseController@updateOrderTotal');
+                Route::post('/pass/{ooid}', 'App\Http\Controllers\api\MerchandiseController@passorder');
+                
                 // 取得訂單
                 Route::get('/', 'App\Http\Controllers\api\MerchandiseController@getOrder');
 

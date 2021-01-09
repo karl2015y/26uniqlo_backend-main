@@ -442,6 +442,58 @@ class MerchandiseController extends Controller
         }
     }
 
+
+     /**
+     * 更新訂單總金額
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updateOrderTotal($ooid)
+    {
+        $order_items = DB::select('select * from order_item where ooid = ?', [$ooid]);
+        $data["total_price"] = 0;
+        foreach ($order_items as $value) {
+            if(strpos($value->ppid, "DG")===0){
+
+                $dg_items = 'App\Models\Daigouitem'::where("dgid", $value->ppid)->get();
+                $dgPrice=0;
+                foreach ($dg_items as $val) {
+                    $dgPrice += $val['total'];
+                }
+                DB::table('order_item')
+                ->where('ppid', $value->ppid)
+                ->update(['price' => $dgPrice]);
+                $data["total_price"] += $dgPrice;
+            }else{
+                $data["total_price"] += ($value->count * $value->price);
+            }
+        }
+        DB::table('order')
+        ->where('ooid', $ooid)
+        ->update(['total' => $data["total_price"]]);
+
+
+
+        return $data["total_price"];
+    }
+
+    /**
+     * 訂單通過
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function passorder($ooid)
+    {
+     
+        DB::table('order')
+        ->where('ooid', $ooid)
+        ->update(['status' => 0]);
+
+        return ['status',true];
+    }
+
     /**
      * 取得所有訂單
      *
@@ -508,9 +560,9 @@ class MerchandiseController extends Controller
                 $obj->EncryptType = '1'; //CheckMacValue加密類型，請固定填入1，使用SHA256加密
                 //基本參數(請依系統規劃自行調整)
                 $MerchantTradeNo = Str::random(10);
-                $obj->Send['ReturnURL'] = "https://476c9a3056a8.ngrok.io/github/shop_backend/public/api/v1/callback"; //付款完成通知回傳的網址
-                $obj->Send['PeriodReturnURL'] = "https://476c9a3056a8.ngrok.io/github/shop_backend/api/v1/callback"; //付款完成通知回傳的網址
-                $obj->Send['ClientBackURL'] = " https://476c9a3056a8.ngrok.io/github/shop_backend//api/v1/success"; //付款完成通知回傳的網址
+                $obj->Send['ReturnURL'] = "https://api.26seoul.com/api/v1/callback"; //付款完成通知回傳的網址
+                $obj->Send['PeriodReturnURL'] = "https://api.26seoul.com/api/v1/callback"; //付款完成通知回傳的網址
+                $obj->Send['ClientBackURL'] = " https://api.26seoul.com//api/v1/success"; //付款完成通知回傳的網址
                 $obj->Send['MerchantTradeNo'] = $MerchantTradeNo; //訂單編號
                 $obj->Send['MerchantTradeDate'] = date('Y/m/d H:i:s'); //交易時間
                 $obj->Send['TotalAmount'] = $data["total_price"]; //交易金額

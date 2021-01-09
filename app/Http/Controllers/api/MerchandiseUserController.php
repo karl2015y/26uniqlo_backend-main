@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Daigouorder;
 use App\Models\Product;
 use Carbon\Carbon;
 use DB;
@@ -91,7 +92,7 @@ class MerchandiseUserController extends Controller
         ], 200);
     }
 
-        /**
+    /**
      * 取得單個產品
      *
      * @param  int  $id
@@ -101,12 +102,12 @@ class MerchandiseUserController extends Controller
     {
 
         // 撈取商品分頁資料
-        $ProductDetail = Product::where('id',$id)->where('status', 1)->orderBy('updated_at', 'desc')->first();
+        $ProductDetail = Product::where('id', $id)->where('status', 1)->orderBy('updated_at', 'desc')->first();
         // 如果不存在
-        if(!$ProductDetail){
+        if (!$ProductDetail) {
             return response()->json([
                 'success' => false,
-                'message' => "商品不存在"
+                'message' => "商品不存在",
             ], 500);
         }
         // 設定商品圖片網址
@@ -114,7 +115,6 @@ class MerchandiseUserController extends Controller
             // 設定商品照片網址
             $ProductDetail->pimg = url($ProductDetail->pimg);
         }
-        
 
         return response()->json([
             'success' => true,
@@ -180,8 +180,13 @@ class MerchandiseUserController extends Controller
         $data["total_price"] = 0;
 
         foreach ($cart_data as $value) {
-            $count = DB::select('select count from product where ppid = ?', [$value->ppid]);
-            $value->remaining_number = $count[0]->count;
+            if ($value->category == "Daigou") {
+                $value->remaining_number = 1;
+            } else {
+                $count = DB::select('select count from product where ppid = ?', [$value->ppid]);
+                $value->remaining_number = $count[0]->count;
+            }
+
             // 如果 購物車
             $data["total_price"] = $data["total_price"] + ($value->count * $value->price);
         }
@@ -228,7 +233,63 @@ class MerchandiseUserController extends Controller
         }
 
     }
+    /**
+     * 新增代購單至購物車
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function createDaigouCart(Request $request)
+    {
+        $request->validate([
+            'dgid' => 'required',
+        ]);
 
+        // $daigouorder_data = DB::select('SELECT * FROM daigouorders WHERE dgid = ? AND uuid = ?', [$request->dgid, $request->user()->uuid]);
+        $cart_data = DB::select('SELECT * FROM cart WHERE ppid = ? AND uuid = ?', [$request->dgid, $request->user()->uuid]);
+        // 'App\Models\Daigouitem'::all()
+        $dg_order = new Daigouorder;
+        $dg_order = $dg_order::where("dgid", $request->dgid)->first();
+        $dg_order->status = 1;
+        $dg_order->save();
+        $dg_items = 'App\Models\Daigouitem'::where("dgid", $request->dgid)->get();
+
+        $amount_price = 0;
+        $all_content = "";
+
+        foreach ($dg_items as $value) {
+            $amount_price += $value['total'];
+            $all_content .= $value['note'];
+            $all_content .= "\n------------\n";
+        }
+
+        $data["cart"] = DB::table('cart')
+            ->where('uuid', $request->user()->uuid)
+            ->where('ppid', $request->dgid)
+            ->delete();
+
+        if (empty($cart_data)) {
+            $data["result"] = DB::insert('insert into cart (uuid,ppid,name,category,unit,description,content,pimg,price,count,created_at,updated_at) values (?,?,?,?,?,?,?,?,?,?,?,?) ', [
+                $request->user()->uuid,
+                $request->dgid,
+                "代購",
+                "Daigou",
+                "筆",
+                "代購",
+                $all_content,
+                "",
+                $amount_price,
+                1,
+                Carbon::now(),
+                Carbon::now(),
+            ]);
+            return response()->json($data, 200);
+
+        } else {
+            return response()->json(["message" => '已在購物車裡,或不存在此商品'], 500);
+        }
+
+    }
     /**
      * 更新購物車
      *
@@ -282,8 +343,13 @@ class MerchandiseUserController extends Controller
         ]);
 
         $remaining_count = DB::select('select * from cart where ppid = ? and uuid = ?', [$request->ppid, $request->user()->uuid]);
-
         if (!empty($remaining_count)) {
+            if ($remaining_count[0]->category == 'Daigou') {
+                $dg_order = new Daigouorder;
+                $dg_order = $dg_order::where("dgid", $request->ppid)->first();
+                $dg_order->status = 0;
+                $dg_order->save();
+            }
 
             $data["cart"] = DB::table('cart')
                 ->where('uuid', $request->user()->uuid)
@@ -320,9 +386,10 @@ class MerchandiseUserController extends Controller
         $data["total_price"] = 0;
 
         if (!empty($cart_data)) {
-
+            $havedg=0;
             foreach ($cart_data as $value) {
                 $data["total_price"] = $data["total_price"] + ($value->count * $value->price);
+                if ($value->category == "Daigou") {$havedg=2;};
             }
 
             $results = DB::table('order')->count();
@@ -333,7 +400,7 @@ class MerchandiseUserController extends Controller
                 $ooid,
                 $uuid,
                 $data["total_price"],
-                0,
+                $havedg,
                 $request->user()->email,
                 $request->name,
                 $request->phone,
@@ -367,23 +434,41 @@ class MerchandiseUserController extends Controller
                 $obj->Send['CustomField2'] = $uuid;
 
                 foreach ($cart_data as $value) {
+                    if ($value->category == "Daigou") {
+                        $cart_data = DB::insert('INSERT INTO order_item (uuid,ooid,ppid,name,price,count,pimg,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)', [
+                            $uuid,
+                            $ooid,
+                            $value->ppid,
+                            "代購單號-".$value->ppid,
+                            $value->price,
+                            $value->count,
+                            $value->pimg,
+                            Carbon::now(),
+                            Carbon::now(),
+                        ]);
+                        array_push($obj->Send['Items'], array(
+                            'Name' =>  "代購單號-".$value->ppid, 'Price' => $value->price,
+                            'Currency' => "元", 'Quantity' => (int) $value->count, 'URL' => "dedwed",
+                        ));
+                    } else {
+                        $cart_data = DB::insert('INSERT INTO order_item (uuid,ooid,ppid,name,price,count,pimg,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)', [
+                            $uuid,
+                            $ooid,
+                            $value->ppid,
+                            $value->name,
+                            $value->price,
+                            $value->count,
+                            $value->pimg,
+                            Carbon::now(),
+                            Carbon::now(),
+                        ]);
+                        array_push($obj->Send['Items'], array(
+                            'Name' => $value->name, 'Price' => $value->price,
+                            'Currency' => "元", 'Quantity' => (int) $value->count, 'URL' => "dedwed",
+                        ));
+                    }
 
-                    $cart_data = DB::insert('INSERT INTO order_item (uuid,ooid,ppid,name,price,count,pimg,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)', [
-                        $uuid,
-                        $ooid,
-                        $value->ppid,
-                        $value->name,
-                        $value->price,
-                        $value->count,
-                        $value->pimg,
-                        Carbon::now(),
-                        Carbon::now(),
-                    ]);
 
-                    array_push($obj->Send['Items'], array(
-                        'Name' => $value->name, 'Price' => $value->price,
-                        'Currency' => "元", 'Quantity' => (int) $value->count, 'URL' => "dedwed",
-                    ));
 
                     $data["product"] = DB::table('product')
                         ->where('ppid', $request->ppid)
@@ -392,7 +477,11 @@ class MerchandiseUserController extends Controller
                 $data["cart"] = DB::table('cart')
                     ->where('uuid', $request->user()->uuid)
                     ->delete();
-                return response()->json($obj->CheckOutString(), 200);
+                if($havedg==0){
+                    return response()->json($obj->CheckOutString(), 200);
+                }else{
+                    return ['needCheck'=>true];
+                }
             } catch (Exception $e) {
                 echo $e->getMessage();
             }
@@ -401,6 +490,8 @@ class MerchandiseUserController extends Controller
             return response()->json('購物車不得為空', 200);
         }
     }
+
+
 
     /**
      * 取得所有訂單
@@ -426,7 +517,6 @@ class MerchandiseUserController extends Controller
         ], 200);
     }
 
-    
     /**
      * 取得自己的訂單
      *
@@ -435,7 +525,7 @@ class MerchandiseUserController extends Controller
      */
     public function ownOrder(Request $request)
     {
-        $ownUUID =  $request->user()->uuid;
+        $ownUUID = $request->user()->uuid;
         // 每頁資料量
         $row_per_page = 10;
 
@@ -443,13 +533,13 @@ class MerchandiseUserController extends Controller
         $OrderPaginate = DB::table('order')->paginate($row_per_page);
 
         foreach ($OrderPaginate as $elementKey => $value) {
-            if($ownUUID != $value->uuid){
+            if ($ownUUID != $value->uuid) {
                 unset($OrderPaginate[$elementKey]);
-            }else{
+            } else {
                 $value->cr_at = Carbon::parse($value->created_at)->diffForHumans();
                 $value->products = DB::select('select * from order_item where uuid = ? and ooid = ?', [$value->uuid, $value->ooid]);
             }
-           
+
         }
         return response()->json([
             'success' => true,
