@@ -41,16 +41,16 @@ class BrandController extends Controller
         // 規則
         $rules = [
             'name' => ['required'],
-            'pic' => ['active_url'],
+            'bimg' => ['active_url'],
             'description' => ['required'],
             'picfile' => ['image']
         ];
          // 錯的回饋
         $messages = [
-            "name.required" => "品牌標題為必填",
-            "pic.active_url" => "品牌連結錯誤",
-            "description.required" => "品牌說明為必填",
-            "picfile.image" => "品牌圖片上傳格式錯誤",
+            "name.required" => "blog標題為必填",
+            "pic.active_url" => "blog圖片連結錯誤",
+            "description.required" => "blog內容為必填",
+            "picfile.image" => "圖片上傳格式錯誤",
         ];
         //驗證是否正確
         $validator = Validator::make($request->all(), $rules,  $messages);
@@ -61,7 +61,7 @@ class BrandController extends Controller
         }else{
             return response()->json([
                     'success' => true,
-                    'data' => 'App\Models\Brand'::firstOrCreate(  //存到資料庫
+                    'data' => 'App\Models\Blog'::firstOrCreate(  //存到資料庫
                         ['name' => $request->all()['name']],
                          $request->all()
                     )

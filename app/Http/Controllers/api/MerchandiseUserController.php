@@ -98,11 +98,11 @@ class MerchandiseUserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function getProductbyId($id)
+    public function getProductbyId($ppid)
     {
 
         // 撈取商品分頁資料
-        $ProductDetail = Product::where('id', $id)->where('status', 1)->orderBy('updated_at', 'desc')->first();
+        $ProductDetail = Product::where('ppid', $ppid)->where('status', 1)->orderBy('updated_at', 'desc')->first();
         // 如果不存在
         if (!$ProductDetail) {
             return response()->json([
@@ -207,10 +207,10 @@ class MerchandiseUserController extends Controller
         $request->validate([
             'ppid' => 'required',
         ]);
-
+        $count = $request->count ? $request->count : 1;
         $product_data = DB::select('SELECT * FROM product WHERE ppid = ?', [$request->ppid]);
         $cart_data = DB::select('SELECT * FROM cart WHERE ppid = ? AND uuid = ?', [$request->ppid, $request->user()->uuid]);
-
+        $product_price = $product_data[0]->price < $product_data[0]->origin_price ?  $product_data[0]->price : $product_data[0]->origin_price;
         if (empty($cart_data) && !empty($product_data)) {
             $data["result"] = DB::insert('insert into cart (uuid,ppid,name,category,unit,description,content,pimg,price,count,created_at,updated_at) values (?,?,?,?,?,?,?,?,?,?,?,?) ', [
                 $request->user()->uuid,
@@ -221,15 +221,19 @@ class MerchandiseUserController extends Controller
                 $product_data[0]->description,
                 $product_data[0]->content,
                 $product_data[0]->pimg,
-                $product_data[0]->price,
-                1,
+                $product_price,
+                $count,
                 Carbon::now(),
                 Carbon::now(),
             ]);
             return response()->json($data, 200);
 
         } else {
-            return response()->json(["message" => '已在購物車裡,或不存在此商品'], 500);
+            if(!empty($cart_data)){
+                return response()->json(["message" => '已在購物車裡'], 501);
+            }else if(empty($product_data)){
+                return response()->json(["message" => '不存在此商品'], 502);
+            }
         }
 
     }
@@ -386,10 +390,10 @@ class MerchandiseUserController extends Controller
         $data["total_price"] = 0;
 
         if (!empty($cart_data)) {
-            $havedg=0;
+            $havedg = 0;
             foreach ($cart_data as $value) {
                 $data["total_price"] = $data["total_price"] + ($value->count * $value->price);
-                if ($value->category == "Daigou") {$havedg=2;};
+                if ($value->category == "Daigou") {$havedg = 2;};
             }
 
             $results = DB::table('order')->count();
@@ -439,7 +443,7 @@ class MerchandiseUserController extends Controller
                             $uuid,
                             $ooid,
                             $value->ppid,
-                            "代購單號-".$value->ppid,
+                            "代購單號-" . $value->ppid,
                             $value->price,
                             $value->count,
                             $value->pimg,
@@ -447,7 +451,7 @@ class MerchandiseUserController extends Controller
                             Carbon::now(),
                         ]);
                         array_push($obj->Send['Items'], array(
-                            'Name' =>  "代購單號-".$value->ppid, 'Price' => $value->price,
+                            'Name' => "代購單號-" . $value->ppid, 'Price' => $value->price,
                             'Currency' => "元", 'Quantity' => (int) $value->count, 'URL' => "dedwed",
                         ));
                     } else {
@@ -468,8 +472,6 @@ class MerchandiseUserController extends Controller
                         ));
                     }
 
-
-
                     $data["product"] = DB::table('product')
                         ->where('ppid', $request->ppid)
                         ->update(['count' => $value->count]);
@@ -477,10 +479,10 @@ class MerchandiseUserController extends Controller
                 $data["cart"] = DB::table('cart')
                     ->where('uuid', $request->user()->uuid)
                     ->delete();
-                if($havedg==0){
+                if ($havedg == 0) {
                     return response()->json($obj->CheckOutString(), 200);
-                }else{
-                    return ['needCheck'=>true];
+                } else {
+                    return ['needCheck' => true];
                 }
             } catch (Exception $e) {
                 echo $e->getMessage();
@@ -490,8 +492,6 @@ class MerchandiseUserController extends Controller
             return response()->json('購物車不得為空', 200);
         }
     }
-
-
 
     /**
      * 取得所有訂單

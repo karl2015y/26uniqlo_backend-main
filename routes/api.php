@@ -20,6 +20,14 @@ use Illuminate\Support\Facades\Route;
 // });
 
 Route::prefix('v1')->group(function () {
+
+    Route::prefix('blogs')->group(function () {
+        // 取得所有文章
+        Route::get('/', 'App\Http\Controllers\BlogController@index');
+        // 取得單篇文章
+        Route::get('/{id}', 'App\Http\Controllers\BlogController@show');
+    });
+
     // 品牌
     Route::prefix('brands')->group(function () {
         // 看全部品牌
@@ -125,6 +133,17 @@ Route::prefix('v1')->group(function () {
                 Route::post('/uploadimg', 'App\Http\Controllers\api\MerchandiseController@uploadImg');
             });
 
+            Route::prefix('blogs')->group(function () {
+                // 取得所有文章
+                Route::get('/', 'App\Http\Controllers\BlogController@indexAll');
+                // 新增產品
+                Route::post('/', 'App\Http\Controllers\BlogController@store');
+                // // 刪除產品
+                Route::delete('/{id}', 'App\Http\Controllers\BlogController@destroy');
+                // 更新產品
+                Route::post('/{id}', 'App\Http\Controllers\BlogController@update');
+            });
+
             Route::prefix('cart')->group(function () {
                 // 新增購物車
                 Route::post('/', 'App\Http\Controllers\api\MerchandiseController@createCart');
@@ -151,10 +170,9 @@ Route::prefix('v1')->group(function () {
             // 模擬類
             Route::prefix('order')->group(function () {
 
-                
                 Route::post('/updatetotal/{ooid}', 'App\Http\Controllers\api\MerchandiseController@updateOrderTotal');
                 Route::post('/pass/{ooid}', 'App\Http\Controllers\api\MerchandiseController@passorder');
-                
+
                 // 取得訂單
                 Route::get('/', 'App\Http\Controllers\api\MerchandiseController@getOrder');
 
