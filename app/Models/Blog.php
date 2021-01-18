@@ -15,5 +15,6 @@ class Blog extends Model
         'description', //部落格文章
         'status', //是否上架
         'bimg', //圖片連結
+        'type', //類別; Home/Blog/vip
     ];
 }

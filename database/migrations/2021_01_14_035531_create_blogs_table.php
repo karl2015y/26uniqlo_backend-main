@@ -18,6 +18,7 @@ class CreateBlogsTable extends Migration
             $table->string('name');// 名字
             $table->text('description');// 敘述
             $table->integer('status');// 是否上架
+            $table->string('type');// 類別; Home/Blog/vip
             $table->string('bimg')->nullable();
             $table->timestamps();
         });

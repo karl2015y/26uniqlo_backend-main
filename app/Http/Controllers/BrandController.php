@@ -208,9 +208,11 @@ class BrandController extends Controller
                                     'data' => "無資料",
                                     ], 200);
         }else{
+        $brand = 'App\Models\Brand'::where("name", $brandname)->first(); //符合的品牌細節
             $products =  'App\Models\Product'::where('category',$brandname);
             return response()->json([
                                     'success' => true,
+                                    'brand'=> $brand,
                                     'data' =>   $products->orderBy('updated_at', 'desc')
                                     ->paginate($row_per_page)
                                     ], 200);

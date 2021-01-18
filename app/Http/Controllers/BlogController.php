@@ -15,14 +15,22 @@ class BlogController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function indexAll()
+    public function indexAll(Request $request)
     {
         // 每頁資料量
         $row_per_page = 10;
 
         // 撈取商品分頁資料
-        $Blogs = 'App\Models\Blog'::OrderBy('updated_at', 'desc')
+    
+
+        if($request->type){
+            $Blogs = 'App\Models\Blog'::where('type',$request->type)->OrderBy('updated_at', 'desc')
             ->paginate($row_per_page);
+        }else{
+            $Blogs = 'App\Models\Blog'::OrderBy('updated_at', 'desc') // 預設輸出全部資料
+            ->paginate($row_per_page);
+        }
+    
 
         // 設定商品圖片網址
         // foreach ($Blogs as &$blog) {
@@ -46,14 +54,22 @@ class BlogController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
+
         // 每頁資料量
         $row_per_page = 10;
 
-        // 撈取商品分頁資料
-        $Blogs = 'App\Models\Blog'::where('status',1)->where('id','<>',1)->OrderBy('updated_at', 'desc')
+        if($request->type){
+            $Blogs = 'App\Models\Blog'::where('status',1)->where('type',$request->type)->OrderBy('updated_at', 'desc')
             ->paginate($row_per_page);
+        }else{
+            $Blogs = 'App\Models\Blog'::where('status',1)->where('type','Blog')->OrderBy('updated_at', 'desc') // 預設輸出Blog資料
+            ->paginate($row_per_page);
+        }
+
+        // 撈取商品分頁資料
+        
 
         // 設定商品圖片網址
         // foreach ($Blogs as &$blog) {
@@ -106,6 +122,7 @@ class BlogController extends Controller
             if ($request->name) {$res['bimg'] = $request->bimg;};
             if ($request->name) {$res['description'] = $request->description;};
             if ($request->name) {$res['status'] = 0;};
+            if ($request->type) {$res['type'] = $request->type;};
             return response()->json([
                 'success' => true,
                 'data' => 'App\Models\Blog'::firstOrCreate( //存到資料庫
