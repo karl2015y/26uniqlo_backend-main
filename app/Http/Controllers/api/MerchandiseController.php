@@ -562,7 +562,7 @@ class MerchandiseController extends Controller
                 $MerchantTradeNo = Str::random(10);
                 $obj->Send['ReturnURL'] = "https://api.26seoul.com/api/v1/callback"; //付款完成通知回傳的網址
                 $obj->Send['PeriodReturnURL'] = "https://api.26seoul.com/api/v1/callback"; //付款完成通知回傳的網址
-                $obj->Send['ClientBackURL'] = " https://api.26seoul.com//api/v1/success"; //付款完成通知回傳的網址
+                $obj->Send['ClientBackURL'] = "https://26seoul.com/web/#/myorder"; //付款完成通知回傳的網址
                 $obj->Send['MerchantTradeNo'] = $MerchantTradeNo; //訂單編號
                 $obj->Send['MerchantTradeDate'] = date('Y/m/d H:i:s'); //交易時間
                 $obj->Send['TotalAmount'] = $data["total_price"]; //交易金額
