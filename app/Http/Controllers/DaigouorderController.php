@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Daigouorder;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -36,16 +37,29 @@ class DaigouorderController extends Controller
     public function store(Request $request)
     {
         $results = Daigouorder::count();
+        $createData = Daigouorder::Create( //存到資料庫
+            [
+                'dgid'=>"DG" . date("Y") . date("m") . date("d") . date("H") . date("i") . ($results + 1),
+                'uuid'=>$request->user()->uuid,
+                'ooid'=>"null",
+                'status'=>0, //尚未成交
+            ]
+            );
+        
+        'App\Models\Daigouitem'::create( //存到資料庫
+            [
+            'dgid' => $createData['dgid'],
+            'dgurl' => "https://26seoul.com/web/#/blog/4",
+            'dgtype' =>"韓國運費(若無運費，審核後會退回)",
+            'count' => 1,
+            'price' => 0,
+            'note' => "若該訂單並無韓國運費，審核後會退回60元",
+            'total'=>60,
+            ]
+        );
         return response()->json([
             'success' => true,
-            'data' => Daigouorder::Create( //存到資料庫
-                [
-                    'dgid'=>"DG" . date("Y") . date("m") . date("d") . date("H") . date("i") . ($results + 1),
-                    'uuid'=>$request->user()->uuid,
-                    'ooid'=>"null",
-                    'status'=>0, //尚未成交
-                ]
-            ),
+            'data' => $createData,
         ], 200);
     }
 

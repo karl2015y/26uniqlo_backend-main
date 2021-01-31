@@ -153,10 +153,15 @@ class DaigouitemController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($itemid)
+    public function destroy(Request $request, $itemid)
     {
-        //
         $oldData = Daigouitem::where('id', $itemid)->first();
+        if($oldData['dgtype']=="韓國運費(若無運費，審核後會退回)" && $request->user()->roles!="admin"){
+            return response()->json([
+                'success' => false,
+                'data' => "若無運費，審核後會退回，無法自行刪除",
+                ], 200);
+        }
         if($oldData){
             Daigouitem::where('id', $itemid)->delete();
             return response()->json([

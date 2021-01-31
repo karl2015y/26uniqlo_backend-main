@@ -120,6 +120,7 @@ class DaigouparameterController extends Controller
      */
     public function destroy($id)
     {
+
         $oldData = Daigouparameter::find($id);
         if($oldData){
             Daigouparameter::where('id', $id)->delete();
